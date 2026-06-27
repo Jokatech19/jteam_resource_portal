@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Tickets</title>
+</head>
+<body>
+    <h1>My Tickets</h1>
+
+    <p><a href="/new-ticket">Submit New Ticket</a></p>
+
+    {% if tickets %}
+        {% for ticket in tickets %}
+            <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+                <h3>{{ ticket.subject }}</h3>
+                <p>Category: {{ ticket.category }}</p>
+                <p>Priority: {{ ticket.priority }}</p>
+                <p>Status: {{ ticket.status }}</p>
+                <p>Created: {{ ticket.created_at }}</p>
+                <p><a href="/ticket/{{ ticket.id }}">View Ticket</a></p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No tickets yet.</p>
+    {% endif %}
+
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>

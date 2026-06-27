@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Ticket Detail</title>
+</head>
+<body>
+    <h1>{{ ticket.subject }}</h1>
+
+    <p><strong>Client:</strong> {{ ticket.name }} - {{ ticket.email }}</p>
+    <p><strong>Category:</strong> {{ ticket.category }}</p>
+    <p><strong>Priority:</strong> {{ ticket.priority }}</p>
+    <p><strong>Status:</strong> {{ ticket.status }}</p>
+    <p><strong>Created:</strong> {{ ticket.created_at }}</p>
+
+    <h2>Description</h2>
+    <p style="white-space: pre-wrap;">{{ ticket.description }}</p>
+
+    <h2>Messages</h2>
+
+    {% if messages %}
+        {% for msg in messages %}
+            <div style="border:1px solid #ddd; padding:10px; margin:10px;">
+                <p><strong>{{ msg.sender_type }}</strong> - {{ msg.created_at }}</p>
+                <p style="white-space: pre-wrap;">{{ msg.message }}</p>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No messages yet.</p>
+    {% endif %}
+
+    <h2>Respond / Update</h2>
+
+    <form method="post">
+        <label>Status</label><br>
+        <select name="status">
+            <option {% if ticket.status == "Open" %}selected{% endif %}>Open</option>
+            <option {% if ticket.status == "In Progress" %}selected{% endif %}>In Progress</option>
+            <option {% if ticket.status == "Waiting on Client" %}selected{% endif %}>Waiting on Client</option>
+            <option {% if ticket.status == "Closed" %}selected{% endif %}>Closed</option>
+        </select><br><br>
+
+        <label>Reply</label><br>
+        <textarea name="message" rows="8" cols="70"></textarea><br><br>
+
+        <button type="submit">Save Response</button>
+    </form>
+
+    <p><a href="/admin/tickets">Back to All Tickets</a></p>
+</body>
+</html>
