@@ -1,5 +1,7 @@
 import sqlite3
 import os
+import smtplib
+from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,6 +23,27 @@ def get_db():
         g.db.row_factory = sqlite3.Row
     return g.db
 
+def send_email(to_email, subject, body):
+    smtp_server = os.environ.get("SMTP_SERVER")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_username = os.environ.get("SMTP_USERNAME")
+    smtp_password = os.environ.get("SMTP_PASSWORD")
+    from_email = os.environ.get("FROM_EMAIL", smtp_username)
+
+    if not smtp_server or not smtp_username or not smtp_password:
+        print("Email not sent: SMTP settings missing.")
+        return
+
+    msg = EmailMessage()
+    msg["From"] = from_email
+    msg["To"] = to_email
+    msg["Subject"] = subject
+    msg.set_content(body)
+
+    with smtplib.SMTP(smtp_server, smtp_port) as server:
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        server.send_message(msg)
 
 @app.teardown_appcontext
 def close_db(error):
@@ -213,14 +236,21 @@ def new_ticket():
             VALUES (?, ?, ?, ?, ?)
         """, (current_user.id, subject, category, priority, description))
         db.commit()
+admin_email = os.environ.get("ADMIN_EMAIL")
 
+if admin_email:
+    send_email(
+        admin_email,
+        "New J-Team Resource Ticket Submitted",
+        f"A new ticket was submitted by {current_user.name}.\n\nSubject: {subject}\nCategory: {category}\nPriority: {priority}\n\nDescription:\n{description}"
+    )
         flash("Ticket submitted successfully.")
         return redirect(url_for("tickets"))
 
     return render_template("new_ticket.html")
 
 
-@app.route("/ticket/<int:ticket_id>")
+@app.route("/ticket/<int:ticket_id>", methods=["GET", "POST"])
 @login_required
 def ticket_detail(ticket_id):
     db = get_db()
@@ -233,6 +263,35 @@ def ticket_detail(ticket_id):
     if not ticket:
         flash("Ticket not found.")
         return redirect(url_for("tickets"))
+
+    if request.method == "POST":
+        message = request.form.get("message", "").strip()
+
+        if message:
+            db.execute("""
+                INSERT INTO ticket_messages (ticket_id, sender_type, message)
+                VALUES (?, ?, ?)
+            """, (ticket_id, "Client", message))
+
+            db.execute("""
+                UPDATE tickets
+                SET updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (ticket_id,))
+
+            db.commit()
+
+            admin_email = os.environ.get("ADMIN_EMAIL")
+            if admin_email:
+                send_email(
+                    admin_email,
+                    f"Client Reply on Ticket #{ticket_id}",
+                    f"{current_user.name} replied to ticket #{ticket_id}.\n\nMessage:\n{message}"
+                )
+
+            flash("Reply sent.")
+
+        return redirect(url_for("ticket_detail", ticket_id=ticket_id))
 
     messages = db.execute("""
         SELECT * FROM ticket_messages
@@ -259,7 +318,61 @@ def admin_tickets():
     """).fetchall()
 
     return render_template("admin_tickets.html", tickets=tickets)
-    
+
+@app.route("/admin/ticket/<int:ticket_id>", methods=["GET", "POST"])
+@login_required
+def admin_ticket_detail(ticket_id):
+    if not is_admin_user():
+        flash("Admin access required.")
+        return redirect(url_for("dashboard"))
+
+    db = get_db()
+
+    ticket = db.execute("""
+        SELECT tickets.*, clients.name, clients.email
+        FROM tickets
+        LEFT JOIN clients ON tickets.client_id = clients.id
+        WHERE tickets.id = ?
+    """, (ticket_id,)).fetchone()
+
+    if not ticket:
+        flash("Ticket not found.")
+        return redirect(url_for("admin_tickets"))
+
+    if request.method == "POST":
+        message = request.form.get("message", "").strip()
+        status = request.form.get("status", ticket["status"])
+
+        db.execute("""
+            UPDATE tickets
+            SET status = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (status, ticket_id))
+
+        if message:
+            db.execute("""
+                INSERT INTO ticket_messages (ticket_id, sender_type, message)
+                VALUES (?, ?, ?)
+            """, (ticket_id, "Admin", message))
+
+            if ticket["email"]:
+                send_email(
+                    ticket["email"],
+                    f"Response to Your J-Team Resource Ticket #{ticket_id}",
+                    f"Your ticket has a new response.\n\nSubject: {ticket['subject']}\n\nResponse:\n{message}\n\nPlease log into the portal to continue the conversation."
+                )
+
+        db.commit()
+        flash("Ticket updated.")
+        return redirect(url_for("admin_ticket_detail", ticket_id=ticket_id))
+
+    messages = db.execute("""
+        SELECT * FROM ticket_messages
+        WHERE ticket_id = ?
+        ORDER BY created_at ASC
+    """, (ticket_id,)).fetchall()
+
+    return render_template("admin_ticket_detail.html", ticket=ticket, messages=messages)    
     
 @app.route("/logout")
 @login_required
