@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Training Catalog</title>
+</head>
+<body>
+    <h1>Training Catalog</h1>
+
+    {% for training in trainings %}
+        <div style="border:1px solid #ccc; padding:15px; margin:15px; max-width:900px;">
+            <h2>{{ training.title }}</h2>
+            <p>{{ training.description }}</p>
+            <p><strong>Price:</strong> ${{ training.price }}</p>
+
+            {% if training.paypal_url %}
+                <p>
+                    <a href="{{ training.paypal_url }}" target="_blank">
+                        Pay with PayPal
+                    </a>
+                </p>
+            {% else %}
+                <p>Payment link not available yet.</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>No trainings available yet.</p>
+    {% endfor %}
+
+    <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>

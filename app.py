@@ -1,6 +1,8 @@
 import sqlite3
 import os
 import smtplib
+import psycopg2
+import psycopg2.extras
 from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -8,7 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "..", "jokatech_business.db")
+DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
+
 app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
 
@@ -16,11 +19,43 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+class DatabaseWrapper:
+    def __init__(self, conn, is_postgres=False):
+        self.conn = conn
+        self.is_postgres = is_postgres
+
+    def execute(self, query, params=()):
+        if self.is_postgres:
+            query = query.replace("?", "%s")
+            query = query.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+            cur = self.conn.cursor()
+            cur.execute(query, params)
+            return cur
+        else:
+            return self.conn.execute(query, params)
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
 
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
+        database_url = os.environ.get("DATABASE_URL")
+
+        if database_url:
+            conn = psycopg2.connect(
+                database_url,
+                cursor_factory=psycopg2.extras.RealDictCursor
+            )
+            g.db = DatabaseWrapper(conn, is_postgres=True)
+        else:
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            g.db = DatabaseWrapper(conn, is_postgres=False)
+
     return g.db
 
 def send_email(to_email, subject, body):
@@ -57,8 +92,8 @@ class User(UserMixin):
         self.id = str(row["id"])
         self.email = row["email"]
         self.name = row["name"]
-        self.is_admin = row["is_admin"] if "is_admin" in row.keys() else "No"
-
+        #self.is_admin = row["is_admin"] if "is_admin" in row.keys() else "No"
+        self.is_admin = row.get("is_admin", "No")
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -66,6 +101,7 @@ def load_user(user_id):
     row = db.execute("SELECT * FROM clients WHERE id = ?", (user_id,)).fetchone()
     return User(row) if row else None
 
+    
 def is_admin_user():
     return (
         current_user.is_authenticated
@@ -98,7 +134,10 @@ def setup_tables():
             active TEXT DEFAULT 'Yes'
         )
     """)
-
+    try:
+        db.execute("ALTER TABLE trainings ADD COLUMN paypal_url TEXT")
+    except sqlite3.OperationalError:
+        pass
     db.execute("""
         CREATE TABLE IF NOT EXISTS enrollments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -207,6 +246,19 @@ def trainings():
 
     return render_template("trainings.html", trainings=rows)
 
+@app.route("/training-catalog")
+@login_required
+def training_catalog():
+    db = get_db()
+
+    trainings = db.execute("""
+        SELECT *
+        FROM trainings
+        WHERE active = 'Yes'
+        ORDER BY title
+    """).fetchall()
+
+    return render_template("training_catalog.html", trainings=trainings)
 @app.route("/tickets")
 @login_required
 def tickets():
