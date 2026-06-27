@@ -236,14 +236,20 @@ def new_ticket():
             VALUES (?, ?, ?, ?, ?)
         """, (current_user.id, subject, category, priority, description))
         db.commit()
-admin_email = os.environ.get("ADMIN_EMAIL")
 
-if admin_email:
-    send_email(
-        admin_email,
-        "New J-Team Resource Ticket Submitted",
-        f"A new ticket was submitted by {current_user.name}.\n\nSubject: {subject}\nCategory: {category}\nPriority: {priority}\n\nDescription:\n{description}"
-    )
+        admin_email = os.environ.get("ADMIN_EMAIL")
+
+        if admin_email:
+            send_email(
+                admin_email,
+                "New J-Team Resource Ticket Submitted",
+                f"A new ticket was submitted by {current_user.name}.\n\n"
+                f"Subject: {subject}\n"
+                f"Category: {category}\n"
+                f"Priority: {priority}\n\n"
+                f"Description:\n{description}"
+            )
+
         flash("Ticket submitted successfully.")
         return redirect(url_for("tickets"))
 
@@ -359,7 +365,10 @@ def admin_ticket_detail(ticket_id):
                 send_email(
                     ticket["email"],
                     f"Response to Your J-Team Resource Ticket #{ticket_id}",
-                    f"Your ticket has a new response.\n\nSubject: {ticket['subject']}\n\nResponse:\n{message}\n\nPlease log into the portal to continue the conversation."
+                    f"Your ticket has a new response.\n\n"
+                    f"Subject: {ticket['subject']}\n\n"
+                    f"Response:\n{message}\n\n"
+                    f"Please log into the portal to continue the conversation."
                 )
 
         db.commit()
@@ -372,7 +381,7 @@ def admin_ticket_detail(ticket_id):
         ORDER BY created_at ASC
     """, (ticket_id,)).fetchall()
 
-    return render_template("admin_ticket_detail.html", ticket=ticket, messages=messages)    
+    return render_template("admin_ticket_detail.html", ticket=ticket, messages=messages)
     
 @app.route("/logout")
 @login_required
