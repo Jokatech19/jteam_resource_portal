@@ -4,7 +4,7 @@
     <title>Admin Tickets</title>
 </head>
 <body>
-    <h1>Admin Ticket View</h1>
+    <h1>Admin Tickets</h1>
 
     {% for ticket in tickets %}
         <div style="border:1px solid #ccc; padding:12px; margin:12px; max-width:900px;">
@@ -13,13 +13,15 @@
             <p><strong>Category:</strong> {{ ticket.category }}</p>
             <p><strong>Priority:</strong> {{ ticket.priority }}</p>
             <p><strong>Status:</strong> {{ ticket.status }}</p>
-            <p><strong>Description:</strong></p>
-            <p style="white-space: pre-wrap;">{{ ticket.description }}</p>
+            <p><strong>Created:</strong> {{ ticket.created_at }}</p>
+            <p>
+                <a href="/admin/ticket/{{ ticket.id }}">Open Ticket</a>
+            </p>
         </div>
     {% else %}
         <p>No tickets found.</p>
     {% endfor %}
-	<a href="/admin/ticket/{{ ticket.id }}">Open Ticket</a>
-    <p><a href="/dashboard">Back to Dashboard</a></p>
+
+    <p><a href="/admin">Back to Admin Dashboard</a></p>
 </body>
 </html>

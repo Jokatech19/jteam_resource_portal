@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Ticket</title>
+</head>
+
+<body>
+
+<h1>Ticket #{{ ticket.id }}</h1>
+
+<h2>{{ ticket.subject }}</h2>
+
+<p><b>Client:</b> {{ ticket.name }}</p>
+<p><b>Email:</b> {{ ticket.email }}</p>
+<p><b>Category:</b> {{ ticket.category }}</p>
+<p><b>Priority:</b> {{ ticket.priority }}</p>
+<p><b>Status:</b> {{ ticket.status }}</p>
+
+<hr>
+
+<h2>Description</h2>
+
+<p>{{ ticket.description }}</p>
+
+<hr>
+
+<h2>Conversation</h2>
+
+{% for message in messages %}
+
+<div style="border:1px solid #999;padding:10px;margin:10px;">
+
+<b>{{ message.sender_type }}</b>
+
+<br>
+
+{{ message.message }}
+
+<br><br>
+
+<small>{{ message.created_at }}</small>
+
+</div>
+
+{% endfor %}
+
+<hr>
+
+<h2>Reply</h2>
+
+<form method="POST">
+
+<label>Status</label>
+
+<br>
+
+<select name="status">
+
+<option>Open</option>
+
+<option>In Progress</option>
+
+<option>Waiting on Client</option>
+
+<option>Closed</option>
+
+</select>
+
+<br><br>
+
+<textarea
+name="message"
+rows="8"
+cols="80"
+placeholder="Type your reply here..."
+></textarea>
+
+<br><br>
+
+<button type="submit">
+
+Send Reply
+
+</button>
+
+</form>
+
+<br>
+
+<a href="/admin/tickets">
+
+Back to Tickets
+
+</a>
+
+</body>
+</html>

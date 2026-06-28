@@ -164,7 +164,15 @@ def setup_tables():
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    try:
+        db.execute("ALTER TABLE tickets ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
 
+    try:
+        db.execute("ALTER TABLE tickets ADD COLUMN updated_at TEXT DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
     db.execute("""
     CREATE TABLE IF NOT EXISTS ticket_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -174,6 +182,15 @@ def setup_tables():
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
     """)
+    try:
+        db.execute("ALTER TABLE ticket_messages ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        db.execute("ALTER TABLE ticket_messages ADD COLUMN sender_type TEXT")
+    except sqlite3.OperationalError:
+        pass
+
 
     db.commit()
 
@@ -486,7 +503,12 @@ def admin_grant_access(client_id):
         db.commit()
         flash("Training access granted.")
         return redirect(url_for("admin_clients"))
-
+#ADDED
+        send_email(
+            client["email"],
+            "Your J-Team Resource Training Access Is Ready",
+            "Your training access has been approved. Please log into the portal and open My Trainings."
+            )
     return render_template("admin_grant_access.html", client=client, trainings=trainings)  
 @app.route("/logout")
 @login_required
