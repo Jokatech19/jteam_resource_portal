@@ -8,7 +8,6 @@ from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 #DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
 DB_PATH = os.path.join(BASE_DIR, "jokatech_business.db")
@@ -59,26 +58,34 @@ def get_db():
     return g.db
 
 def send_email(to_email, subject, body):
-    smtp_server = os.environ.get("SMTP_SERVER")
-    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-    smtp_username = os.environ.get("SMTP_USERNAME")
-    smtp_password = os.environ.get("SMTP_PASSWORD")
-    from_email = os.environ.get("FROM_EMAIL", smtp_username)
+    try:
+        smtp_server = os.environ.get("SMTP_SERVER")
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        smtp_username = os.environ.get("SMTP_USERNAME")
+        smtp_password = os.environ.get("SMTP_PASSWORD")
+        from_email = os.environ.get("FROM_EMAIL", smtp_username)
 
-    if not smtp_server or not smtp_username or not smtp_password:
-        print("Email not sent: SMTP settings missing.")
-        return
+        if not smtp_server or not smtp_username or not smtp_password:
+            print("Email not sent: SMTP settings missing.")
+            return False
 
-    msg = EmailMessage()
-    msg["From"] = from_email
-    msg["To"] = to_email
-    msg["Subject"] = subject
-    msg.set_content(body)
+        msg = EmailMessage()
+        msg["From"] = from_email
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.set_content(body)
 
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_username, smtp_password)
-        server.send_message(msg)
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+
+        print(f"Email sent to {to_email}")
+        return True
+
+    except Exception as e:
+        print(f"Email failed: {e}")
+        return False
 
 @app.teardown_appcontext
 def close_db(error):
