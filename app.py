@@ -93,8 +93,12 @@ class User(UserMixin):
         self.email = row["email"]
         self.name = row["name"]
         #self.is_admin = row["is_admin"] if "is_admin" in row.keys() else "No"
-        self.is_admin = row.get("is_admin", "No")
+        #self.is_admin = row.get("is_admin", "No")
 
+        try:
+            self.is_admin = row["is_admin"]
+        except (KeyError, IndexError):
+            self.is_admin = "No"
 @login_manager.user_loader
 def load_user(user_id):
     db = get_db()
@@ -376,7 +380,7 @@ def admin_tickets():
     """).fetchall()
 
     return render_template("admin_tickets.html", tickets=tickets)
-
+#ADDED
 @app.route("/admin/ticket/<int:ticket_id>", methods=["GET", "POST"])
 @login_required
 def admin_ticket_detail(ticket_id):
@@ -434,7 +438,56 @@ def admin_ticket_detail(ticket_id):
     """, (ticket_id,)).fetchall()
 
     return render_template("admin_ticket_detail.html", ticket=ticket, messages=messages)
-    
+  
+
+@app.route("/admin")
+@login_required
+def admin_dashboard():
+    if not is_admin_user():
+        flash("Admin access required.")
+        return redirect(url_for("dashboard"))
+
+    return render_template("admin_dashboard.html")
+
+
+@app.route("/admin/clients")
+@login_required
+def admin_clients():
+    if not is_admin_user():
+        flash("Admin access required.")
+        return redirect(url_for("dashboard"))
+
+    db = get_db()
+    clients = db.execute("SELECT * FROM clients ORDER BY name").fetchall()
+
+    return render_template("admin_clients.html", clients=clients)
+
+
+@app.route("/admin/grant-access/<int:client_id>", methods=["GET", "POST"])
+@login_required
+def admin_grant_access(client_id):
+    if not is_admin_user():
+        flash("Admin access required.")
+        return redirect(url_for("dashboard"))
+
+    db = get_db()
+
+    client = db.execute("SELECT * FROM clients WHERE id = ?", (client_id,)).fetchone()
+    trainings = db.execute("SELECT * FROM trainings WHERE active = 'Yes' ORDER BY title").fetchall()
+
+    if request.method == "POST":
+        training_id = request.form["training_id"]
+
+        db.execute("""
+            INSERT INTO enrollments (client_id, training_id, access_granted, purchase_date)
+            VALUES (?, ?, 'Yes', CURRENT_TIMESTAMP)
+        """, (client_id, training_id))
+
+        db.commit()
+        flash("Training access granted.")
+        return redirect(url_for("admin_clients"))
+
+    return render_template("admin_grant_access.html", client=client, trainings=trainings)  
 @app.route("/logout")
 @login_required
 def logout():

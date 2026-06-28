@@ -1,0 +1,14 @@
+<h1>Clients</h1>
+
+{% for client in clients %}
+    <div style="border:1px solid #ccc; padding:12px; margin:12px;">
+        <h3>{{ client.name }}</h3>
+        <p>{{ client.email }}</p>
+        <p>Admin: {{ client.is_admin }}</p>
+        <p><a href="/admin/grant-access/{{ client.id }}">Grant Training Access</a></p>
+    </div>
+{% else %}
+    <p>No clients found.</p>
+{% endfor %}
+
+<p><a href="/admin">Back to Admin Dashboard</a></p>
