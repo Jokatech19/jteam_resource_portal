@@ -10,8 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
-
+#DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
+DB_PATH = os.path.join(BASE_DIR, "jokatech_business.db")
 app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
 
