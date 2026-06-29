@@ -13,7 +13,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "jokatech_business.db")
 app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
-
+EMAIL_ENABLED = os.environ.get("EMAIL_ENABLED", "false").lower() == "true"
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -58,6 +58,10 @@ def get_db():
     return g.db
 
 def send_email(to_email, subject, body):
+    if not EMAIL_ENABLED:
+        print("Email disabled. Skipping send.")
+        return False
+
     try:
         smtp_server = os.environ.get("SMTP_SERVER")
         smtp_port = int(os.environ.get("SMTP_PORT", "587"))
@@ -75,7 +79,7 @@ def send_email(to_email, subject, body):
         msg["Subject"] = subject
         msg.set_content(body)
 
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
             server.starttls()
             server.login(smtp_username, smtp_password)
             server.send_message(msg)
