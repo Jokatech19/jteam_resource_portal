@@ -197,7 +197,20 @@ def setup_tables():
         db.execute("ALTER TABLE ticket_messages ADD COLUMN sender_type TEXT")
     except sqlite3.OperationalError:
         pass
+    try:
+        db.execute("ALTER TABLE ticket_messages ADD COLUMN message TEXT")
+    except sqlite3.OperationalError:
+        pass
 
+    try:
+        db.execute("ALTER TABLE ticket_messages ADD COLUMN sender_type TEXT")
+    except sqlite3.OperationalError:
+        pass
+
+    try:
+        db.execute("ALTER TABLE ticket_messages ADD COLUMN created_at TEXT DEFAULT CURRENT_TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
 
     db.commit()
 
