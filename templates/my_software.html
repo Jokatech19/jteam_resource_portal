@@ -5,7 +5,11 @@
         <h2>{{ tool.title }}</h2>
         <p>{{ tool.description }}</p>
         <p><strong>Version:</strong> {{ tool.version }}</p>
-        <p><strong>SHA-256:</strong> {{ tool.file_hash }}</p>
+        <!--<p><strong>SHA-256:</strong> {{ tool.file_hash }}</p>-->
+		<p><strong>Version:</strong> {{ tool.version }}</p>
+		<p>✔ Licensed to your account</p>
+
+<a href="{{ tool.file_url }}" target="_blank">Download</a>
 
         <a href="{{ tool.file_url }}" target="_blank">Download</a>
     </div>

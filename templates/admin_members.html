@@ -1,0 +1,15 @@
+<h1>Registered Members</h1>
+
+{% for member in members %}
+    <div style="border:1px solid #ccc; padding:12px; margin:12px;">
+        <p><strong>ID:</strong> {{ member.id }}</p>
+        <p><strong>Name:</strong> {{ member.name }}</p>
+        <p><strong>Email:</strong> {{ member.email }}</p>
+        <p><strong>Payment Status:</strong> {{ member.payment_status }}</p>
+        <p><strong>Admin:</strong> {{ member.is_admin }}</p>
+    </div>
+{% else %}
+    <p>No members found.</p>
+{% endfor %}
+
+<p><a href="/admin">Back to Admin Dashboard</a></p>

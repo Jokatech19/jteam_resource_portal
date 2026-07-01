@@ -564,6 +564,22 @@ def my_software():
     """, (current_user.id,)).fetchall()
 
     return render_template("my_software.html", tools=tools)
+    
+@app.route("/admin/members")
+@login_required
+def admin_members():
+    if not is_admin_user():
+        flash("Admin access required.")
+        return redirect(url_for("dashboard"))
+
+    db = get_db()
+    members = db.execute("""
+        SELECT id, name, email, payment_status, is_admin
+        FROM clients
+        ORDER BY id DESC
+    """).fetchall()
+
+    return render_template("admin_members.html", members=members)
 @app.route("/logout")
 @login_required
 def logout():
