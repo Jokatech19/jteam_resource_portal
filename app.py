@@ -534,6 +534,36 @@ def admin_grant_access(client_id):
             "Your training access has been approved. Please log into the portal and open My Trainings."
             )
     return render_template("admin_grant_access.html", client=client, trainings=trainings)  
+    
+@app.route("/software-catalog")
+@login_required
+def software_catalog():
+    db = get_db()
+    tools = db.execute("""
+        SELECT *
+        FROM software_tools
+        WHERE active = 'Yes'
+        ORDER BY title
+    """).fetchall()
+
+    return render_template("software_catalog.html", tools=tools)
+
+
+@app.route("/my-software")
+@login_required
+def my_software():
+    db = get_db()
+    tools = db.execute("""
+        SELECT software_tools.*
+        FROM software_tools
+        JOIN software_access ON software_tools.id = software_access.software_id
+        WHERE software_access.client_id = ?
+        AND software_access.access_granted = 'Yes'
+        AND software_tools.active = 'Yes'
+        ORDER BY software_tools.title
+    """, (current_user.id,)).fetchall()
+
+    return render_template("my_software.html", tools=tools)
 @app.route("/logout")
 @login_required
 def logout():

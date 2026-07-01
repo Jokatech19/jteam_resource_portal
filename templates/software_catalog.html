@@ -1,0 +1,20 @@
+<h1>Software Catalog</h1>
+
+{% for tool in tools %}
+    <div style="border:1px solid #ccc; padding:15px; margin:15px;">
+        <h2>{{ tool.title }}</h2>
+        <p>{{ tool.description }}</p>
+        <p><strong>Version:</strong> {{ tool.version }}</p>
+        <p><strong>Price:</strong> ${{ tool.price }}</p>
+
+        {% if tool.paypal_url %}
+            <a href="{{ tool.paypal_url }}" target="_blank">Purchase with PayPal</a>
+        {% else %}
+            <p>Payment link not available.</p>
+        {% endif %}
+    </div>
+{% else %}
+    <p>No software available.</p>
+{% endfor %}
+
+<p><a href="/dashboard">Back to Dashboard</a></p>

@@ -1,0 +1,16 @@
+<h1>My Software</h1>
+
+{% for tool in tools %}
+    <div style="border:1px solid #ccc; padding:15px; margin:15px;">
+        <h2>{{ tool.title }}</h2>
+        <p>{{ tool.description }}</p>
+        <p><strong>Version:</strong> {{ tool.version }}</p>
+        <p><strong>SHA-256:</strong> {{ tool.file_hash }}</p>
+
+        <a href="{{ tool.file_url }}" target="_blank">Download</a>
+    </div>
+{% else %}
+    <p>No software unlocked yet.</p>
+{% endfor %}
+
+<p><a href="/dashboard">Back to Dashboard</a></p>
