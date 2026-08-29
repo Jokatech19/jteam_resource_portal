@@ -69,8 +69,14 @@ def send_email(to_email, subject, body):
         smtp_password = os.environ.get("SMTP_PASSWORD")
         from_email = os.environ.get("FROM_EMAIL", smtp_username)
 
-        if not smtp_server or not smtp_username or not smtp_password:
-            print("Email not sent: SMTP settings missing.")
+        if not all([
+            smtp_server,
+            smtp_username,
+            smtp_password,
+            from_email,
+            to_email
+        ]):
+            print("Email not sent: SMTP configuration is incomplete.")
             return False
 
         msg = EmailMessage()
@@ -80,15 +86,17 @@ def send_email(to_email, subject, body):
         msg.set_content(body)
 
         with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+            server.ehlo()
             server.starttls()
+            server.ehlo()
             server.login(smtp_username, smtp_password)
             server.send_message(msg)
 
-        print(f"Email sent to {to_email}")
+        print(f"Email sent successfully to {to_email}")
         return True
 
-    except Exception as e:
-        print(f"Email failed: {e}")
+    except Exception as error:
+        print(f"Email failed: {type(error).__name__}: {error}")
         return False
 
 @app.teardown_appcontext
@@ -251,22 +259,58 @@ def register():
     return render_template("login.html", register=True)
 
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
+@app.route("/register", methods=["GET", "POST"])
+def register():
     if request.method == "POST":
-        email = request.form["email"]
+        name = request.form["name"].strip()
+        email = request.form["email"].strip().lower()
         password = request.form["password"]
 
         db = get_db()
-        row = db.execute("SELECT * FROM clients WHERE email = ?", (email,)).fetchone()
 
-        if row and check_password_hash(row["password_hash"], password):
-            login_user(User(row))
-            return redirect(url_for("dashboard"))
+        try:
+            db.execute(
+                """
+                INSERT INTO clients (name, email, password_hash)
+                VALUES (?, ?, ?)
+                """,
+                (name, email, generate_password_hash(password))
+            )
+            db.commit()
 
-        flash("Invalid email or password.")
+            admin_email = os.environ.get("ADMIN_EMAIL")
 
-    return render_template("login.html", register=False)
+            if admin_email:
+                send_email(
+                    admin_email,
+                    "New J-Team Resource Client Registration",
+                    (
+                        "A new client created a portal account.\n\n"
+                        f"Name: {name}\n"
+                        f"Email: {email}\n\n"
+                        "Log in to the admin portal to review the member."
+                    )
+                )
+
+            # Optional welcome email to the new client
+            send_email(
+                email,
+                "Welcome to J-Team Resource",
+                (
+                    f"Hello {name},\n\n"
+                    "Your J-Team Resource portal account has been created.\n\n"
+                    "You can now sign in to view training, software, "
+                    "support tickets, and resources available to your account."
+                )
+            )
+
+            flash("Account created. You can log in now.")
+            return redirect(url_for("login"))
+
+        except sqlite3.IntegrityError:
+            flash("That email address is already registered.")
+
+    return render_template("login.html", register=True)
 
 
 @app.route("/dashboard")
