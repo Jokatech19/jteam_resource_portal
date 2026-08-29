@@ -7,6 +7,7 @@ from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, logout_user, login_required, current_user
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 #DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
@@ -237,6 +238,26 @@ def home():
     return redirect(url_for("login"))
 
 
+#@app.route("/register", methods=["GET", "POST"])
+#def register():
+ #   if request.method == "POST":
+  #      name = request.form["name"]
+   #     email = request.form["email"]
+    #    password = request.form["password"]
+#
+ #       db = get_db()
+  #     try:
+   #         db.execute(
+    #            "INSERT INTO clients (name, email, password_hash) VALUES (?, ?, ?)",
+     #           (name, email, generate_password_hash(password))
+      #      )
+       #     db.commit()
+        #    flash("Account created. You can log in now.")
+         #   return redirect(url_for("login"))
+        #except sqlite3.IntegrityError:
+         #   flash("That email already exists.")
+#
+ #   return render_template("login.html", register=True)
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -250,10 +271,7 @@ def register():
 
         try:
             db.execute(
-                """
-                INSERT INTO clients (name, email, password_hash)
-                VALUES (?, ?, ?)
-                """,
+                "INSERT INTO clients (name, email, password_hash) VALUES (?, ?, ?)",
                 (name, email, generate_password_hash(password))
             )
             db.commit()
@@ -292,6 +310,30 @@ def register():
 
     return render_template("login.html", register=True)
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form["email"].strip().lower()
+        password = request.form["password"]
+
+        db = get_db()
+
+        user = db.execute(
+            "SELECT * FROM clients WHERE email = ?",
+            (email,)
+        ).fetchone()
+
+        if user and check_password_hash(user["password_hash"], password):
+            login_user(User(user))
+
+            if user["is_admin"] == "Yes":
+                return redirect(url_for("admin_dashboard"))
+
+            return redirect(url_for("dashboard"))
+
+        flash("Invalid email or password.")
+
+    return render_template("login.html", register=False)
 
 @app.route("/dashboard")
 @login_required
