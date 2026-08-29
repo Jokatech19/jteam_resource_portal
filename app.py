@@ -2,6 +2,7 @@ import sqlite3
 import os
 import smtplib
 import psycopg2
+import requests
 import psycopg2.extras
 from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, g
@@ -227,7 +228,46 @@ def setup_tables():
 
     db.commit()
 
+def notify_portal_activity(
+    event,
+    name="",
+    email="",
+    product="",
+    status="",
+    notify_client=False
+):
+    webhook = os.environ.get("GOOGLE_ACTIVITY_WEBHOOK")
 
+    if not webhook:
+        print("Google activity webhook is not configured.")
+        return False
+
+    try:
+        response = requests.post(
+            webhook,
+            json={
+                "event": event,
+                "name": name,
+                "email": email,
+                "product": product,
+                "status": status,
+                "notify_client": notify_client
+            },
+            timeout=10
+        )
+
+        print(
+            "Portal notification:",
+            response.status_code,
+            response.text
+        )
+
+        return response.ok
+
+    except Exception as error:
+        print("Notification failed:", error)
+        return False
+        
 @app.before_request
 def before_request():
     setup_tables()
@@ -275,7 +315,13 @@ def register():
                 (name, email, generate_password_hash(password))
             )
             db.commit()
-
+            notify_portal_activity(
+                event="New Client Registration",
+                name=name,
+                email=email,
+                status="Registered",
+                notify_client=True
+)
             admin_email = os.environ.get("ADMIN_EMAIL")
 
             if admin_email:
