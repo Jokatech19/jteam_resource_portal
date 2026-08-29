@@ -315,7 +315,7 @@ def register():
             password_hash = generate_password_hash(password)
             db.execute(
                 "INSERT INTO clients (name, email, password_hash) VALUES (?, ?, ?)",
-                (name, email, generate_password_hash)
+                (name, email, password_hash)
             )
             db.commit()
             notify_portal_activity(
