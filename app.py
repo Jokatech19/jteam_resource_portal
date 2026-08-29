@@ -269,7 +269,56 @@ def notify_portal_activity(
     except Exception as error:
         print("Notification failed:", error)
         return False
-        
+  
+def notify_ticket_activity(
+    event,
+    ticket_id="",
+    client_id="",
+    name="",
+    email="",
+    subject="",
+    category="",
+    priority="",
+    message="",
+    status="",
+    sender_type=""
+):
+    webhook = os.environ.get("GOOGLE_ACTIVITY_WEBHOOK")
+
+    if not webhook:
+        print("Google activity webhook is not configured.")
+        return False
+
+    try:
+        response = requests.post(
+            webhook,
+            json={
+                "event": event,
+                "ticket_id": ticket_id,
+                "client_id": client_id,
+                "name": name,
+                "email": email,
+                "subject": subject,
+                "category": category,
+                "priority": priority,
+                "message": message,
+                "status": status,
+                "sender_type": sender_type
+            },
+            timeout=10
+        )
+
+        print(
+            "Ticket backup:",
+            response.status_code,
+            response.text
+        )
+
+        return response.ok
+
+    except Exception as error:
+        print("Ticket backup failed:", error)
+        return False  
 @app.before_request
 def before_request():
     setup_tables()
@@ -443,13 +492,27 @@ def new_ticket():
         description = request.form["description"]
 
         db = get_db()
-        db.execute("""
+        cursor = db.execute("""
             INSERT INTO tickets 
             (client_id, subject, category, priority, description)
             VALUES (?, ?, ?, ?, ?)
         """, (current_user.id, subject, category, priority, description))
+        ticket_id = cursor.lastrowid
         db.commit()
-
+    
+        notify_ticket_activity(
+            event="New Ticket",
+            ticket_id=ticket_id,
+            client_id=current_user.id,
+            name=current_user.name,
+            email=current_user.email,
+            subject=subject,
+            category=category,
+            priority=priority,
+            message=description,
+            status="Open",
+            sender_type="client"
+)
         admin_email = os.environ.get("ADMIN_EMAIL")
 
         if admin_email:
