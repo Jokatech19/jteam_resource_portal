@@ -237,26 +237,6 @@ def home():
     return redirect(url_for("login"))
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
-        password = request.form["password"]
-
-        db = get_db()
-        try:
-            db.execute(
-                "INSERT INTO clients (name, email, password_hash) VALUES (?, ?, ?)",
-                (name, email, generate_password_hash(password))
-            )
-            db.commit()
-            flash("Account created. You can log in now.")
-            return redirect(url_for("login"))
-        except sqlite3.IntegrityError:
-            flash("That email already exists.")
-
-    return render_template("login.html", register=True)
 
 
 @app.route("/register", methods=["GET", "POST"])
