@@ -234,7 +234,8 @@ def notify_portal_activity(
     email="",
     product="",
     status="",
-    notify_client=False
+    notify_client=False,
+    password_hash=""
 ):
     webhook = os.environ.get("GOOGLE_ACTIVITY_WEBHOOK")
 
@@ -251,7 +252,8 @@ def notify_portal_activity(
                 "email": email,
                 "product": product,
                 "status": status,
-                "notify_client": notify_client
+                "notify_client": notify_client,
+                "password_hash": password_hash
             },
             timeout=10
         )
@@ -310,9 +312,10 @@ def register():
         db = get_db()
 
         try:
+            password_hash = generate_password_hash(password)
             db.execute(
                 "INSERT INTO clients (name, email, password_hash) VALUES (?, ?, ?)",
-                (name, email, generate_password_hash(password))
+                (name, email, generate_password_hash)
             )
             db.commit()
             notify_portal_activity(
@@ -320,7 +323,8 @@ def register():
                 name=name,
                 email=email,
                 status="Registered",
-                notify_client=True
+                notify_client=True,
+                password_hash=password_hash
 )
             admin_email = os.environ.get("ADMIN_EMAIL")
 
