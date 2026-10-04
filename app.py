@@ -244,12 +244,12 @@ def setup_tables():
     try:
         db.execute("ALTER TABLE AI_Image2Vid ADD COLUMN client_id INTEGER")
     except sqlite3.OperationalError:
-    pass
+        pass
 
     try:
         db.execute("ALTER TABLE AI_Image2Vid ADD COLUMN ticket_id INTEGER")
     except sqlite3.OperationalError:
-    pass
+        pass
 
     db.commit()
 def notify_portal_activity(
