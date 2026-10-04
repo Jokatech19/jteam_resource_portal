@@ -226,8 +226,32 @@ def setup_tables():
     except sqlite3.OperationalError:
         pass
 
-    db.commit()
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS AI_Image2Vid (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id INTEGER,
+        ticket_id INTEGER,
+        RefImg TEXT,
+        AnimPrompt TEXT,
+        Dur INTEGER,
+        Status TEXT DEFAULT 'Pending Approval',
+        CPromptID TEXT,
+        OutName TEXT,
+        AdminApp TEXT DEFAULT 'No'
+    )
+    """)
+    
+    try:
+        db.execute("ALTER TABLE AI_Image2Vid ADD COLUMN client_id INTEGER")
+    except sqlite3.OperationalError:
+    pass
 
+    try:
+        db.execute("ALTER TABLE AI_Image2Vid ADD COLUMN ticket_id INTEGER")
+    except sqlite3.OperationalError:
+    pass
+
+    db.commit()
 def notify_portal_activity(
     event,
     name="",
@@ -531,6 +555,49 @@ def new_ticket():
 
     return render_template("new_ticket.html")
 
+@app.route("/ai-video-request", methods=["GET", "POST"])
+@login_required
+def ai_video_request():
+    if request.method == "POST":
+        anim_prompt = request.form["anim_prompt"].strip()
+        duration = int(request.form.get("duration", 4))
+
+        db = get_db()
+
+        cursor = db.execute("""
+            INSERT INTO tickets
+            (client_id, subject, category, priority, status, description)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            current_user.id,
+            "AI Image-to-Video Request",
+            "AI Video Generation",
+            "Normal",
+            "Open",
+            anim_prompt
+        ))
+
+        ticket_id = cursor.lastrowid
+
+        db.execute("""
+            INSERT INTO AI_Image2Vid
+            (client_id, ticket_id, AnimPrompt, Dur, Status, AdminApp)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            current_user.id,
+            ticket_id,
+            anim_prompt,
+            duration,
+            "Pending Approval",
+            "No"
+        ))
+
+        db.commit()
+
+        flash("AI video request submitted for approval.")
+        return redirect(url_for("tickets"))
+
+    return render_template("ai_video_request.html")
 
 @app.route("/ticket/<int:ticket_id>", methods=["GET", "POST"])
 @login_required

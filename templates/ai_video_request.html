@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Image to Video Request</title>
+</head>
+<body>
+
+    <h1>AI Image to Video Request</h1>
+
+    <form method="POST">
+
+        <label for="anim_prompt">Describe the animation you want:</label><br>
+        <textarea
+            id="anim_prompt"
+            name="anim_prompt"
+            rows="8"
+            cols="60"
+            required
+        ></textarea>
+
+        <br><br>
+
+        <label for="duration">Requested duration:</label><br>
+        <select id="duration" name="duration">
+            <option value="2">2 seconds</option>
+            <option value="3">3 seconds</option>
+            <option value="4" selected>4 seconds</option>
+            <option value="5">5 seconds</option>
+        </select>
+
+        <br><br>
+
+        <button type="submit">
+            Submit for Approval
+        </button>
+
+    </form>
+
+</body>
+</html>
