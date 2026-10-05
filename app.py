@@ -608,7 +608,19 @@ def ai_video_request():
         ))
 
         db.commit()
-
+        notify_ticket_activity(
+            event="New AI Video Request",
+            ticket_id=ticket_id,
+            client_id=current_user.id,
+            name=current_user.name,
+            email=current_user.email,
+            subject="AI Image-to-Video Request",
+            category="AI Video Generation",
+            priority="Normal",
+            message=anim_prompt,
+            status="Pending Approval",
+            sender_type="client"
+        )
         admin_email = os.environ.get("ADMIN_EMAIL")
 
         if admin_email:
