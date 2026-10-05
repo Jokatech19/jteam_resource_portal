@@ -651,13 +651,13 @@ def ai_video_request():
                 admin_email,
                 "New AI Image-to-Video Request",
                 (
-                f"A new AI video request was submitted by {current_user.name}.\n\n"
-                f"Client Email: {current_user.email}\n"
-                f"Ticket ID: {ticket_id}\n"
-                f"Requested Duration: {duration} seconds\n"
-                f"Reference Image: {filename}\n\n"
-                f"Animation Prompt:\n{anim_prompt}\n\n"
-                "Log in to the admin portal to review and approve the request."
+                    f"A new AI video request was submitted by {current_user.name}.\n\n"
+                    f"Client Email: {current_user.email}\n"
+                    f"Ticket ID: {ticket_id}\n"
+                    f"Requested Duration: {duration} seconds\n"
+                    f"Reference Image: {filename}\n\n"
+                    f"Animation Prompt:\n{anim_prompt}\n\n"
+                    "Log in to the admin portal to review and approve the request."
                 ),
                 attachment_path=saved_path,
                 attachment_name=filename
