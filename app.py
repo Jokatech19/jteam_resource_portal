@@ -5,6 +5,7 @@ import psycopg2
 import requests
 import psycopg2.extras
 import mimetypes
+import base64
 from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -326,6 +327,8 @@ def notify_ticket_activity(
     message="",
     status="",
     sender_type=""
+    attachment_path=None,
+    attachment_name=None
 ):
     webhook = os.environ.get("GOOGLE_ACTIVITY_WEBHOOK")
 
@@ -334,6 +337,22 @@ def notify_ticket_activity(
         return False
 
     try:
+        image_base64 = ""
+        image_mime = ""
+        image_name = ""
+
+        if attachment_path and os.path.exists(attachment_path):
+            with open(attachment_path, "rb") as image_file:
+                image_base64 = base64.b64encode(
+                    image_file.read()
+                ).decode("utf-8")
+
+            image_name = attachment_name or os.path.basename(attachment_path)
+
+            image_mime, _ = mimetypes.guess_type(attachment_path)
+
+            if not image_mime:
+                image_mime = "application/octet-stream"
         response = requests.post(
             webhook,
             json={
@@ -347,9 +366,12 @@ def notify_ticket_activity(
                 "priority": priority,
                 "message": message,
                 "status": status,
-                "sender_type": sender_type
+                "sender_type": sender_type,
+                "image_name": image_name,
+                "image_mime": image_mime,
+                "image_base64": image_base64
             },
-            timeout=10
+            timeout=30
         )
 
         print(
@@ -644,7 +666,9 @@ def ai_video_request():
                 f"Animation Prompt:\n{anim_prompt}"
             ),
             status="Pending Approval",
-            sender_type="client"
+            sender_type="client",
+            attachment_path=saved_path,
+            attachment_name=filename
 )
         admin_email = os.environ.get("ADMIN_EMAIL")
 
