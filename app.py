@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.utils import secure_filename
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 #DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
@@ -561,7 +562,20 @@ def ai_video_request():
     if request.method == "POST":
         anim_prompt = request.form["anim_prompt"].strip()
         duration = int(request.form.get("duration", 4))
+    
+        ref_image = request.files.get("ref_image")
 
+        if not ref_image or ref_image.filename == "":
+            flash("Please upload a reference image.")
+            return redirect(url_for("ai_video_request"))
+
+        filename = secure_filename(ref_image.filename)
+
+        upload_folder = os.path.join(BASE_DIR, "static", "uploads", "ai_video")
+        os.makedirs(upload_folder, exist_ok=True)
+
+        saved_path = os.path.join(upload_folder, filename)
+        ref_image.save(saved_path)
         db = get_db()
 
         cursor = db.execute("""
@@ -581,11 +595,12 @@ def ai_video_request():
 
         db.execute("""
             INSERT INTO AI_Image2Vid
-            (client_id, ticket_id, AnimPrompt, Dur, Status, AdminApp)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (client_id, ticket_id, RefImg, AnimPrompt, Dur, Status, AdminApp)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             current_user.id,
             ticket_id,
+            filename,
             anim_prompt,
             duration,
             "Pending Approval",
@@ -594,6 +609,22 @@ def ai_video_request():
 
         db.commit()
 
+        admin_email = os.environ.get("ADMIN_EMAIL")
+
+        if admin_email:
+            send_email(
+                admin_email,
+                "New AI Image-to-Video Request",
+                (
+                f"A new AI video request was submitted by {current_user.name}.\n\n"
+                f"Client Email: {current_user.email}\n"
+                f"Ticket ID: {ticket_id}\n"
+                f"Requested Duration: {duration} seconds\n"
+                f"Reference Image: {filename}\n\n"
+                f"Animation Prompt:\n{anim_prompt}\n\n"
+                "Log in to the admin portal to review and approve the request."
+                )
+        )
         flash("AI video request submitted for approval.")
         return redirect(url_for("tickets"))
 
