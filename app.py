@@ -714,6 +714,12 @@ def admin_ticket_detail(ticket_id):
         LEFT JOIN clients ON tickets.client_id = clients.id
         WHERE tickets.id = ?
     """, (ticket_id,)).fetchone()
+    
+    ai_request = db.execute("""
+    SELECT *
+    FROM AI_Image2Vid
+    WHERE ticket_id = ?
+    """, (ticket_id,)).fetchone()
 
     if not ticket:
         flash("Ticket not found.")
@@ -755,7 +761,7 @@ def admin_ticket_detail(ticket_id):
         ORDER BY created_at ASC
     """, (ticket_id,)).fetchall()
 
-    return render_template("admin_ticket_detail.html", ticket=ticket, messages=messages)
+    return render_template("admin_ticket_detail.html", ticket=ticket, messages=messages, ai_request=ai_request)
   
 
 @app.route("/admin")
