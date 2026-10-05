@@ -7,8 +7,19 @@
 
     <h1>AI Image to Video Request</h1>
 
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
 
+		<label for="ref_image">Upload reference image:</label><br>
+
+			<input
+			type="file"
+			id="ref_image"
+			name="ref_image"
+			accept=".jpg,.jpeg,.png,.webp"
+			required
+		>
+
+<br><br>
         <label for="anim_prompt">Describe the animation you want:</label><br>
         <textarea
             id="anim_prompt"
