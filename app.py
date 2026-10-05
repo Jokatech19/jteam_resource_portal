@@ -4,12 +4,14 @@ import smtplib
 import psycopg2
 import requests
 import psycopg2.extras
+import mimetypes
 from email.message import EmailMessage
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
+
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 #DB_PATH = r"C:\Users\Jokatech\Desktop\dist\JayDB\jokatech_business.db"
@@ -60,7 +62,7 @@ def get_db():
 
     return g.db
 
-def send_email(to_email, subject, body):
+def send_email(to_email, subject, body, attachment_path=None, attachment_name=None):
     if not EMAIL_ENABLED:
         print("Email disabled. Skipping send.")
         return False
@@ -88,6 +90,21 @@ def send_email(to_email, subject, body):
         msg["Subject"] = subject
         msg.set_content(body)
 
+        if attachment_path and os.path.exists(attachment_path):
+            mime_type, _ = mimetypes.guess_type(attachment_path)
+
+            if mime_type:
+                maintype, subtype = mime_type.split("/", 1)
+            else:
+                maintype, subtype = "application", "octet-stream"
+
+            with open(attachment_path, "rb") as f:
+                msg.add_attachment(
+                    f.read(),
+                    maintype=maintype,
+                    subtype=subtype,
+                    filename=attachment_name or os.path.basename(attachment_path)
+                )
         with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
             server.ehlo()
             server.starttls()
@@ -609,7 +626,7 @@ def ai_video_request():
 
         db.commit()
         notify_ticket_activity(
-            event="New AI Video Request",
+            event="New Ticket",
             ticket_id=ticket_id,
             client_id=current_user.id,
             name=current_user.name,
@@ -617,10 +634,16 @@ def ai_video_request():
             subject="AI Image-to-Video Request",
             category="AI Video Generation",
             priority="Normal",
-            message=anim_prompt,
+            message=(
+                f"AI VIDEO REQUEST\n"
+                f"Reference Image: {filename}\n"
+                f"Duration: {duration} seconds\n"
+                f"Status: Pending Approval\n\n"
+                f"Animation Prompt:\n{anim_prompt}"
+            ),
             status="Pending Approval",
             sender_type="client"
-        )
+)
         admin_email = os.environ.get("ADMIN_EMAIL")
 
         if admin_email:
@@ -635,7 +658,9 @@ def ai_video_request():
                 f"Reference Image: {filename}\n\n"
                 f"Animation Prompt:\n{anim_prompt}\n\n"
                 "Log in to the admin portal to review and approve the request."
-                )
+                ),
+                attachment_path=saved_path,
+                attachment_name=filename
         )
         flash("AI video request submitted for approval.")
         return redirect(url_for("tickets"))
