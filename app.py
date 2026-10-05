@@ -326,7 +326,7 @@ def notify_ticket_activity(
     priority="",
     message="",
     status="",
-    sender_type=""
+    sender_type="",
     attachment_path=None,
     attachment_name=None
 ):
