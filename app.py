@@ -19,6 +19,8 @@ DB_PATH = os.path.join(BASE_DIR, "jokatech_business.db")
 app = Flask(__name__)
 app.secret_key = "change-this-secret-key"
 EMAIL_ENABLED = os.environ.get("EMAIL_ENABLED", "false").lower() == "true"
+print("EMAIL_ENABLED raw value:", repr(os.environ.get("EMAIL_ENABLED")))
+print("EMAIL_ENABLED parsed value:", EMAIL_ENABLED)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
